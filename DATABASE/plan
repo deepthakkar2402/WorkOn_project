@@ -1,0 +1,118 @@
+
+-- /new db
+-- City Master Table
+CREATE TABLE `city_master` (
+  `city_id` int(3) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `city_name` varchar(30) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Area Master Table (with foreign key to city_master)
+CREATE TABLE `area_master` (
+  `area_id` int(3) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `area_name` varchar(40) NOT NULL,
+  `city_id` int(3) NOT NULL,
+  FOREIGN KEY (`city_id`) REFERENCES `city_master`(`city_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  UNIQUE KEY `unique_area_city` (`area_name`, `city_id`) -- Ensure area names are unique within a city
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Skill List Table
+CREATE TABLE `skill_list` (
+  `skill_id` int(6) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `name` varchar(30) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Admin Master Table
+CREATE TABLE `admin_master` (
+  `admin_id` int(3) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `username` varchar(30) NOT NULL UNIQUE,
+  `password` varchar(255) NOT NULL -- Increased length for hashed passwords 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Customer Master Table
+CREATE TABLE `customer_master` (
+  `customer_id` int(4) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `name` varchar(40) NOT NULL,
+  `email` varchar(50) NOT NULL UNIQUE,
+  `password` varchar(255) NOT NULL, -- Increased length for hashed passwords
+  `contact` bigint(15) NOT NULL,
+  `address` text NOT NULL,
+  `city_id` int(3) NOT NULL,
+  `area_id` int(3) NOT NULL,
+  FOREIGN KEY (`city_id`) REFERENCES `city_master`(`city_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (`area_id`) REFERENCES `area_master`(`area_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `worker_master` (
+  `worker_id` int(6) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `name` varchar(30) NOT NULL,
+  `gender` varchar(6) NOT NULL,
+  `email` varchar(50) NOT NULL UNIQUE,
+  `password` varchar(255) NOT NULL, -- Increased length for hashed passwords
+  `contact` bigint(10) NOT NULL,
+  `address` varchar(250) NOT NULL,
+  `city_id` int(3) NOT NULL,
+  `area_id` int(3) NOT NULL,
+  `skill_id` int(6) NOT NULL, -- Foreign key to skill_list
+  `experience` int(3) NOT NULL,
+  `profile_picture` varchar(100) DEFAULT NULL,
+  `aadhar_number` bigint(14) NOT NULL,
+  `identity_doc` varchar(100) NOT NULL,
+  `description` varchar(200) DEFAULT NULL,
+  `is_verified` tinyint(1) NOT NULL DEFAULT 0,
+  `is_blocked` tinyint(1) NOT NULL DEFAULT 0,
+  `visit_charges` int(4) NOT NULL,
+  FOREIGN KEY (`city_id`) REFERENCES `city_master`(`city_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (`area_id`) REFERENCES `area_master`(`area_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (`skill_id`) REFERENCES `skill_list`(`skill_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- Rate Table (with foreign keys to customer_master and worker_master)
+CREATE TABLE `rate` (
+  `rate_id` int(4) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `customer_id` int(4) NOT NULL,
+  `worker_id` int(6) NOT NULL,
+  `rating` tinyint(1) NOT NULL CHECK (`rating` BETWEEN 1 AND 5), -- Rating between 1 and 5
+  FOREIGN KEY (`customer_id`) REFERENCES `customer_master`(`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (`worker_id`) REFERENCES `worker_master`(`worker_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  UNIQUE KEY `unique_rating` (`customer_id`, `worker_id`) -- Ensure a customer can rate a worker only once
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Chat Master Table (with foreign keys to customer_master and worker_master)
+CREATE TABLE `chat_master` (
+  `chat_id` int(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `sender_id` int(6) NOT NULL,
+  `receiver_id` int(6) NOT NULL,
+  `message` varchar(255) NOT NULL,
+  `timestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (`sender_id`) REFERENCES `customer_master`(`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (`receiver_id`) REFERENCES `worker_master`(`worker_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Booking Master Table (with foreign keys to customer_master and worker_master)
+CREATE TABLE `booking_master` (
+  `booking_id` int(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `customer_id` int(4) NOT NULL,
+  `worker_id` int(6) NOT NULL,
+  `description` varchar(200) NOT NULL,
+  `contact` bigint(10) NOT NULL,
+  `address` varchar(250) NOT NULL,
+  `booking_date` date NOT NULL,
+  `status` enum('pending', 'completed', 'cancelled') NOT NULL DEFAULT 'pending',
+  `skill_id` int(6) NOT NULL,
+  `otp` int(7) NOT NULL,
+  `is_self_booking` tinyint(1) NOT NULL DEFAULT 0,
+  FOREIGN KEY (`customer_id`) REFERENCES `customer_master`(`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (`worker_id`) REFERENCES `worker_master`(`worker_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (`skill_id`) REFERENCES `skill_list`(`skill_id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Bookmark Master Table (with foreign keys to customer_master and worker_master)
+CREATE TABLE `bookmark_master` (
+  `bookmark_id` int(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `customer_id` int(4) NOT NULL,
+  `worker_id` int(6) NOT NULL,
+  FOREIGN KEY (`customer_id`) REFERENCES `customer_master`(`customer_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (`worker_id`) REFERENCES `worker_master`(`worker_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  UNIQUE KEY `unique_bookmark` (`customer_id`, `worker_id`) -- Ensure a customer can bookmark a worker only once
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
